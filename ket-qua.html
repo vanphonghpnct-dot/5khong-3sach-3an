@@ -1,1 +1,42 @@
-<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kết quả tự đánh giá</title><link rel="stylesheet" href="assets/css/style.css"></head><body><header><div class="wrap nav"><a class="brand" href="index.html"><img class="brand-logo" src="assets/logo-hoi.png" alt="Logo Hội Liên hiệp Phụ nữ Việt Nam"><span>5 KHÔNG · 3 SẠCH · 3 AN<small>Hội LHPN thành phố Cần Thơ</small></span></a></div></header><main class="wrap section"><div class="result" id="result"></div><div class="actions"><a class="btn primary" href="tu-danh-gia.html">Đánh giá lại</a><a class="btn" href="index.html">Về trang chủ</a></div></main><script src="assets/js/config.js"></script><script src="assets/js/app.js"></script></body></html>
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kết quả tự đánh giá</title><link rel="stylesheet" href="assets/css/style.css?v=20261006-4"></head><body><header><div class="wrap nav"><a class="brand" href="index.html"><img class="brand-logo" src="assets/logo-hoi.png" alt="Logo Hội Liên hiệp Phụ nữ Việt Nam"><span>5 KHÔNG · 3 SẠCH · 3 AN<small>Hội LHPN thành phố Cần Thơ</small></span></a></div></header><main class="wrap section"><div class="result" id="result"><p>Đang tải kết quả...</p></div><div class="actions"><a class="btn primary" href="tu-danh-gia.html">Đánh giá lại</a><a class="btn" href="index.html">Về trang chủ</a></div></main><script>
+(function(){
+  const names=["Không nghèo","Không bạo lực","Không vi phạm pháp luật và tệ nạn xã hội","Không có trẻ em suy dinh dưỡng và bỏ học","Không lãng phí","Sạch nhà","Sạch bếp","Sạch ngõ","An toàn","An tâm","An sinh"];
+  const groups=["5 Không","5 Không","5 Không","5 Không","5 Không","3 Sạch","3 Sạch","3 Sạch","3 An","3 An","3 An"];
+  const esc=s=>String(s||"").replace(/[&<>'"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[m]));
+  const root=document.getElementById("result");
+  let d=null;
+  try{ d=JSON.parse(localStorage.getItem("assessmentResult")||"null"); }catch(e){}
+  if(!d||!d.criteria){
+    root.innerHTML='<h2>Chưa tìm thấy dữ liệu kết quả</h2><p>Vui lòng quay lại phiếu tự đánh giá và thực hiện lại.</p>';
+    return;
+  }
+  let count={ "5 Không":0,"3 Sạch":0,"3 An":0 }, failed=[];
+  for(let i=1;i<=11;i++){
+    const v=d.criteria["c"+i]&&d.criteria["c"+i].value;
+    if(v==="dat") count[groups[i-1]]++;
+    else failed.push(names[i-1]);
+  }
+  const total=count["5 Không"]+count["3 Sạch"]+count["3 An"];
+  const s=d.support||{};
+  const supports=[];
+  if(s.loan)supports.push("Vay vốn");
+  if(s.training)supports.push("Tập huấn kiến thức");
+  if(s.livelihood)supports.push("Hỗ trợ sinh kế");
+  if(s.cleanWater)supports.push("Hỗ trợ cải thiện điều kiện sử dụng nước sạch");
+  if(s.toilet)supports.push("Hỗ trợ cải tạo, nâng cấp công trình nhà tiêu hợp vệ sinh");
+  if(s.other)supports.push(esc(s.other));
+  root.innerHTML=
+    '<div class="big">'+total+'/11</div>'+
+    '<h1>'+(total===11?'Gia đình tự đánh giá đạt đủ 11 tiêu chuẩn':'Gia đình còn tiêu chuẩn cần tiếp tục thực hiện')+'</h1>'+
+    '<p><b>'+esc(d.meta&&d.meta.name)+'</b> · '+esc(d.meta&&d.meta.unit)+'</p>'+
+    '<div class="notice"><b>Lưu ý:</b> Đây là kết quả tự đánh giá của hộ gia đình, chưa thay thế kết quả bình xét và xác nhận theo quy trình tiêu chí 6.4.</div>'+
+    '<div class="result-groups">'+
+      '<div class="result-box"><strong>'+count["5 Không"]+'/5</strong>5 Không</div>'+
+      '<div class="result-box"><strong>'+count["3 Sạch"]+'/3</strong>3 Sạch</div>'+
+      '<div class="result-box"><strong>'+count["3 An"]+'/3</strong>3 An</div>'+
+    '</div>'+
+    (failed.length?'<h3>Nội dung cần tiếp tục thực hiện</h3><ul>'+failed.map(x=>'<li><b>'+esc(x)+'</b></li>').join('')+'</ul>':'<div class="notice"><b>Kết quả:</b> Gia đình đã tự đánh giá “Đạt” đối với toàn bộ 11 tiêu chuẩn.</div>')+
+    '<p><b>Nhu cầu hỗ trợ đã đăng ký:</b> '+(supports.length?supports.join("; "):"Chưa đăng ký.")+'</p>'+
+    '<p><b>Trạng thái gửi dữ liệu:</b> '+(d.sent===false?'Chưa xác nhận gửi thành công.': 'Phiếu đã được gửi tới hệ thống dữ liệu.')+'</p>';
+})();
+</script></body></html>
