@@ -1,8 +1,16 @@
 const SPREADSHEET_ID = '1ayDUFn20XHUjjSGkDA6OhI9jd1Z9kOq9KVVWB4bpQWE';
 const DATA_SHEET = 'DU_LIEU';
 
-function doGet() {
-  return json_({ ok: true, service: '5-khong-3-sach-3-an', time: new Date().toISOString() });
+function doGet(e) {
+  try {
+    const action = e && e.parameter ? String(e.parameter.action || '') : '';
+    if (action === 'lookup') {
+      return lookup_(String(e.parameter.code || '').trim().toUpperCase());
+    }
+    return json_({ ok: true, service: '5-khong-3-sach-3-an', time: new Date().toISOString() });
+  } catch (err) {
+    return json_({ ok: false });
+  }
 }
 
 function doPost(e) {
@@ -37,7 +45,7 @@ function save_(p) {
   if (!sh) throw new Error('Không tìm thấy sheet DU_LIEU.');
 
   const now = new Date();
-  const maHo = makeHouseholdCode_(p.meta.unit, now);
+  const maHo = String(p.lookupCode || '').trim().toUpperCase() || makeHouseholdCode_(p.meta.unit, now);
   const vals = [];
   for (let i = 1; i <= 11; i++) vals.push(p.criteria['c' + i].value === 'dat' ? 'Đạt' : 'Chưa đạt');
   const tongDat = vals.filter(v => v === 'Đạt').length;
@@ -69,4 +77,32 @@ function makeHouseholdCode_(unit, d) {
 
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+
+function lookup_(code) {
+  if (!/^CT26-[A-F0-9]{16}$/.test(code)) return json_({ ok: false });
+  const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(DATA_SHEET);
+  if (!sh) return json_({ ok: false });
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return json_({ ok: false });
+
+  const finder = sh.getRange(2, 2, lastRow - 1, 1)
+    .createTextFinder(code)
+    .matchEntireCell(true)
+    .findNext();
+
+  if (!finder) return json_({ ok: false });
+
+  const row = finder.getRow();
+  const v = sh.getRange(row, 1, 1, 41).getValues()[0];
+
+  return json_({
+    ok: true,
+    code: v[1],
+    unit: v[8],
+    year: v[10],
+    total: v[26],
+    status: v[34] || 'Chờ bình xét'
+  });
 }
