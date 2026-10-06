@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tra cứu kết quả</title>
+  <link rel="stylesheet" href="assets/css/style.css?v=20261007-2">
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="index.html">
+      <img class="brand-logo" src="assets/logo-hoi.png" alt="Logo Hội Liên hiệp Phụ nữ Việt Nam">
+      <span>5 KHÔNG · 3 SẠCH · 3 AN<small>Hội LHPN thành phố Cần Thơ</small></span>
+    </a>
+    <nav>
+      <a href="index.html">Trang chủ</a>
+      <a href="tieu-chi.html">11 tiêu chuẩn</a>
+      <a href="tu-danh-gia.html">Tự đánh giá</a>
+      <a href="tra-cuu.html">Tra cứu</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap section">
+  <section class="panel lookup-panel">
+    <span class="eyebrow">TRA CỨU AN TOÀN</span>
+    <h1>Tra cứu kết quả tự đánh giá</h1>
+    <p class="muted">Nhập đúng mã tra cứu được cấp sau khi gửi phiếu. Kết quả công khai chỉ hiển thị thông tin tổng hợp, không hiển thị thông tin cá nhân của hộ gia đình.</p>
+
+    <form id="lookupForm">
+      <label>Mã tra cứu *
+        <input id="lookupCode" autocomplete="off" placeholder="Ví dụ: CT26-1A2B3C4D5E6F..." required>
+      </label>
+      <button class="btn primary wide" type="submit">Tra cứu kết quả →</button>
+    </form>
+
+    <div id="lookupResult" class="lookup-result"></div>
+  </section>
+</main>
+
+<footer>HỘI LIÊN HIỆP PHỤ NỮ THÀNH PHỐ CẦN THƠ</footer>
+
+<script>
+(function(){
+  const API="https://script.google.com/macros/s/AKfycbwwCF-AIq4sWi4oSqb7zerPGdXMS9kGHuYXkAgWfLFDuoTv-rsze3EccwFs0B8KeJW1/exec";
+  const form=document.getElementById("lookupForm");
+  const out=document.getElementById("lookupResult");
+  const esc=s=>String(s||"").replace(/[&<>'"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[m]));
+
+  form.addEventListener("submit",async function(e){
+    e.preventDefault();
+    const code=document.getElementById("lookupCode").value.trim().toUpperCase();
+    out.innerHTML='<div class="notice">Đang tra cứu...</div>';
+    try{
+      const res=await fetch(API+'?action=lookup&code='+encodeURIComponent(code));
+      const data=await res.json();
+      if(!data.ok){
+        out.innerHTML='<div class="notice lookup-error"><b>Không tìm thấy kết quả.</b><br>Kiểm tra lại mã tra cứu và thử lại.</div>';
+        return;
+      }
+      out.innerHTML=
+        '<div class="lookup-card">'+
+          '<div class="lookup-head"><span>Kết quả tra cứu</span><strong>'+esc(data.code)+'</strong></div>'+
+          '<div class="result-groups">'+
+            '<div class="result-box"><strong>'+esc(data.total)+'/11</strong>Tổng tiêu chuẩn</div>'+
+            '<div class="result-box"><strong>'+esc(data.year)+'</strong>Năm đánh giá</div>'+
+            '<div class="result-box"><strong>'+esc(data.status)+'</strong>Trạng thái</div>'+
+          '</div>'+
+          '<p><b>Đơn vị:</b> '+esc(data.unit)+'</p>'+
+          '<div class="notice"><b>Bảo vệ dữ liệu:</b> Trang tra cứu không hiển thị họ tên, số điện thoại hoặc địa chỉ hộ gia đình.</div>'+
+        '</div>';
+    }catch(err){
+      out.innerHTML='<div class="notice lookup-error">Chưa kết nối được dịch vụ tra cứu. Vui lòng thử lại sau.</div>';
+    }
+  });
+})();
+</script>
+</body>
+</html>
