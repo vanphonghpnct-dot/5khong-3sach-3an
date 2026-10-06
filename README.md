@@ -18,3 +18,14 @@ Website hỗ trợ hộ gia đình tự rà soát tiêu chuẩn “5 không, 3 s
 ## Nguồn nghiệp vụ
 - Hướng dẫn số 60/HD-BTV ngày 17/7/2026 của Ban Thường vụ Hội LHPN TP Cần Thơ.
 - Phụ lục kèm Hướng dẫn số 53/HD-ĐCT ngày 11/5/2026 của Đoàn Chủ tịch Trung ương Hội LHPN Việt Nam.
+
+
+## Google Sheet dữ liệu
+https://docs.google.com/spreadsheets/d/1ayDUFn20XHUjjSGkDA6OhI9jd1Z9kOq9KVVWB4bpQWE/edit
+
+Bảng gồm 3 sheet:
+- `DU_LIEU`: dữ liệu hộ gia đình và kết quả 11 tiêu chuẩn.
+- `DANH_MUC`: 103 xã/phường và danh mục 11 tiêu chuẩn.
+- `DASHBOARD`: chỉ số tổng hợp và thống kê theo xã/phường.
+
+Mã Apps Script nằm tại `apps-script/Code.gs`.
