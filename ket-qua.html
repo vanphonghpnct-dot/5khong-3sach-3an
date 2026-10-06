@@ -5,7 +5,13 @@
   const esc=s=>String(s||"").replace(/[&<>'"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[m]));
   const root=document.getElementById("result");
   let d=null;
-  try{ d=JSON.parse(localStorage.getItem("assessmentResult")||"null"); }catch(e){}
+  try{
+    const qp=new URLSearchParams(location.search).get("r");
+    if(qp) d=JSON.parse(decodeURIComponent(qp));
+  }catch(e){}
+  if(!d){
+    try{ d=JSON.parse(localStorage.getItem("assessmentResult")||"null"); }catch(e){}
+  }
   if(!d||!d.criteria){
     root.innerHTML='<h2>Chưa tìm thấy dữ liệu kết quả</h2><p>Vui lòng quay lại phiếu tự đánh giá và thực hiện lại.</p>';
     return;
