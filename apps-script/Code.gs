@@ -3,9 +3,15 @@ const DATA_SHEET = 'DU_LIEU';
 
 function doGet(e) {
   try {
-    const action = e && e.parameter ? String(e.parameter.action || '') : '';
+    const p = e && e.parameter ? e.parameter : {};
+    if (String(p.admin || '') === '1') {
+      return HtmlService.createHtmlOutputFromFile('AdminWeb')
+        .setTitle('Quản trị 5 Không · 3 Sạch · 3 An')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
+    }
+    const action = String(p.action || '');
     if (action === 'lookup') {
-      return lookup_(String(e.parameter.code || '').trim().toUpperCase());
+      return lookup_(String(p.code || '').trim().toUpperCase());
     }
     return json_({ ok: true, service: '5-khong-3-sach-3-an', time: new Date().toISOString() });
   } catch (err) {
