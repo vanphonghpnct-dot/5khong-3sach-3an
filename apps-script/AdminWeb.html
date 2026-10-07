@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Quản trị 5 Không · 3 Sạch · 3 An</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;background:#f5f9fd;color:#1f2937}
+    header{background:#1769aa;color:#fff;padding:14px 18px}
+    header b{font-size:18px} header small{display:block;opacity:.9;margin-top:3px}
+    main{max-width:1180px;margin:18px auto;padding:0 14px}
+    .card{background:#fff;border:1px solid #dbeafe;border-radius:14px;padding:16px;margin-bottom:14px}
+    .top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+    .muted{color:#64748b;font-size:13px}
+    .filters{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px}
+    select,input,textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:9px;font:inherit}
+    button{border:0;border-radius:8px;padding:9px 13px;font-weight:700;cursor:pointer}
+    .primary{background:#1769aa;color:white}.secondary{background:#e8f2fb;color:#1769aa}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:9px 7px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}
+    th{background:#f8fafc;position:sticky;top:0}
+    .table-wrap{overflow:auto;max-height:560px}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;background:#eef2ff}
+    .warn{background:#fff7d6}.ok{background:#e7f7ed}.bad{background:#fdeaea}
+    dialog{width:min(720px,94vw);border:0;border-radius:14px;padding:0;box-shadow:0 18px 60px #0003}
+    dialog::backdrop{background:#0006}
+    .dlg{padding:18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label{display:block;font-weight:700;font-size:13px;margin-top:10px}
+    .criteria{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:13px;margin:12px 0}
+    .criteria div{padding:4px 0;border-bottom:1px dashed #e5e7eb}
+    .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+    .hidden{display:none}
+    @media(max-width:760px){.filters,.grid{grid-template-columns:1fr}th:nth-child(4),td:nth-child(4){display:none}}
+  </style>
+</head>
+<body>
+<header><b>QUẢN TRỊ 5 KHÔNG · 3 SẠCH · 3 AN</b><small>Hội LHPN thành phố Cần Thơ</small></header>
+<main>
+  <div class="card" id="authCard">Đang kiểm tra quyền truy cập...</div>
+  <div id="app" class="hidden">
+    <div class="card top">
+      <div><b id="who"></b><div class="muted" id="scope"></div></div>
+      <button class="secondary" onclick="loadData()">Làm mới dữ liệu</button>
+    </div>
+    <div class="card">
+      <div class="filters">
+        <input id="q" placeholder="Tìm theo mã hồ sơ hoặc họ tên">
+        <select id="status"><option value="">Tất cả trạng thái</option><option>Chờ bình xét</option><option>Đã xác nhận đạt</option><option>Đã xác nhận chưa đạt</option><option>Cần bổ sung thông tin</option></select>
+        <select id="unit"><option value="">Tất cả xã/phường</option></select>
+        <button class="primary" onclick="loadData()">Lọc</button>
+      </div>
+    </div>
+    <div class="card table-wrap">
+      <table><thead><tr><th>Mã hồ sơ</th><th>Họ tên</th><th>Xã/Phường</th><th>Điện thoại</th><th>KQ tự đánh giá</th><th>Trạng thái</th><th></th></tr></thead><tbody id="rows"></tbody></table>
+    </div>
+  </div>
+</main>
+<dialog id="dlg"><div class="dlg"><div class="top"><h3 style="margin:0">Bình xét hồ sơ</h3><button class="secondary" onclick="dlg.close()">Đóng</button></div><div id="detail"></div></div></dialog>
+<script>
+let CTX=null, DATA=[];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s||'').replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]));
+google.script.run.withSuccessHandler(init).withFailureHandler(fail).getAdminContext();
+function fail(e){$('authCard').innerHTML='<b>Không thể truy cập.</b><div class="muted">'+esc(e.message||e)+'</div>'}
+function init(c){
+  CTX=c;
+  if(!c.authorized){$('authCard').innerHTML='<b>Tài khoản chưa được cấp quyền.</b><div class="muted">Email đăng nhập: '+esc(c.email||'(không xác định)')+'</div>';return}
+  $('authCard').classList.add('hidden');$('app').classList.remove('hidden');
+  $('who').textContent=c.name+' · '+c.email;
+  $('scope').textContent=c.role==='THANH_PHO'?'Phạm vi: toàn thành phố':'Phạm vi: '+c.unit;
+  if(c.role==='CO_SO'){$('unit').disabled=true;$('unit').innerHTML='<option>'+esc(c.unit)+'</option>'}
+  else google.script.run.withSuccessHandler(units=>{$('unit').innerHTML='<option value="">Tất cả xã/phường</option>'+units.map(x=>'<option>'+esc(x)+'</option>').join('')}).getAdminUnits();
+  loadData();
+}
+function loadData(){
+  if(!CTX)return;
+  const f={q:$('q').value,status:$('status').value,unit:$('unit').value};
+  $('rows').innerHTML='<tr><td colspan="7">Đang tải...</td></tr>';
+  google.script.run.withSuccessHandler(renderRows).withFailureHandler(fail).adminListHouseholds(f);
+}
+function renderRows(rows){
+  DATA=rows||[];
+  $('rows').innerHTML=DATA.length?DATA.map((r,i)=>'<tr><td>'+esc(r.code)+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.unit)+'</td><td>'+esc(r.phone)+'</td><td>'+esc(r.total)+'/11</td><td><span class="pill '+(r.status==='Đã xác nhận đạt'?'ok':r.status==='Đã xác nhận chưa đạt'?'bad':'warn')+'">'+esc(r.status)+'</span></td><td><button class="secondary" onclick="openRow('+i+')">Mở</button></td></tr>').join(''):'<tr><td colspan="7">Không có hồ sơ phù hợp.</td></tr>';
+}
+function openRow(i){
+  const r=DATA[i];
+  google.script.run.withSuccessHandler(showDetail).withFailureHandler(fail).adminGetHousehold(r.row);
+}
+function showDetail(r){
+  const names=['Không nghèo','Không bạo lực','Không vi phạm pháp luật và TNXH','Không có trẻ em suy dinh dưỡng và bỏ học','Không lãng phí','Sạch nhà','Sạch bếp','Sạch ngõ','An toàn','An tâm','An sinh'];
+  $('detail').innerHTML='<div class="grid"><div><b>'+esc(r.name)+'</b><div class="muted">'+esc(r.code)+'</div></div><div><b>'+esc(r.unit)+'</b><div class="muted">'+esc(r.address)+'</div></div></div>'+
+    '<div class="criteria">'+names.map((n,i)=>'<div>'+esc(n)+'</div><div><b>'+esc(r.criteria[i])+'</b></div>').join('')+'</div>'+
+    '<label>Trạng thái bình xét</label><select id="dStatus">'+['Chờ bình xét','Đã xác nhận đạt','Đã xác nhận chưa đạt','Cần bổ sung thông tin'].map(x=>'<option '+(x===r.status?'selected':'')+'>'+x+'</option>').join('')+'</select>'+
+    '<label>Ý kiến Trưởng ấp/khu vực</label><textarea id="dOpinion">'+esc(r.opinion)+'</textarea>'+
+    '<label>Người xác nhận</label><input id="dReviewer" value="'+esc(r.reviewer)+'">'+
+    '<label>Ghi chú quản trị</label><textarea id="dNote">'+esc(r.note)+'</textarea>'+
+    '<div class="actions"><button class="primary" onclick="saveDetail('+r.row+')">Lưu bình xét</button></div>';
+  dlg.showModal();
+}
+function saveDetail(row){
+  const d={row:row,status:$('dStatus').value,opinion:$('dOpinion').value,reviewer:$('dReviewer').value,note:$('dNote').value};
+  google.script.run.withSuccessHandler(()=>{dlg.close();loadData()}).withFailureHandler(fail).adminSaveReview(d);
+}
+</script>
+</body></html>
