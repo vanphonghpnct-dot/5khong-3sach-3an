@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;padding:14px;color:#1f2937}
+    h2{font-size:18px;margin:0 0 10px;color:#1769aa}
+    .muted{font-size:12px;color:#6b7280;line-height:1.45}
+    .box{border:1px solid #dbeafe;background:#f8fbff;border-radius:12px;padding:12px;margin:12px 0}
+    .row{margin:8px 0}.row b{display:block;font-size:12px;color:#475569;margin-bottom:2px}
+    label{display:block;font-size:12px;font-weight:700;margin:10px 0 5px}
+    select,textarea,input{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:9px;font:inherit}
+    textarea{min-height:70px;resize:vertical}
+    button{width:100%;border:0;border-radius:9px;padding:10px 12px;font-weight:700;cursor:pointer;margin-top:8px}
+    .primary{background:#1769aa;color:#fff}.secondary{background:#eaf3fb;color:#1769aa}
+    .crit{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px dashed #dbe3ea}
+    .ok{color:#15803d;font-weight:700}.no{color:#b42318;font-weight:700}
+    .status{margin-top:10px;font-size:12px}
+  </style>
+</head>
+<body>
+  <h2>Bảng bình xét nội bộ</h2>
+  <p class="muted">Chọn một dòng hồ sơ trong sheet <b>DU_LIEU</b>, sau đó bấm “Tải hồ sơ đang chọn”.</p>
+  <button class="secondary" onclick="loadSelected()">Tải hồ sơ đang chọn</button>
+
+  <div id="content"></div>
+  <div id="msg" class="status"></div>
+
+<script>
+let current=null;
+function e(s){return String(s||'').replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
+function loadSelected(){
+  document.getElementById('msg').textContent='Đang tải...';
+  google.script.run.withSuccessHandler(render).withFailureHandler(err=>{
+    document.getElementById('msg').textContent=err.message||String(err);
+  }).getSelectedHousehold();
+}
+function render(d){
+  current=d;
+  const names=['Không nghèo','Không bạo lực','Không vi phạm pháp luật và TNXH','Không có trẻ em suy dinh dưỡng và bỏ học','Không lãng phí','Sạch nhà','Sạch bếp','Sạch ngõ','An toàn','An tâm','An sinh'];
+  let crit='';
+  names.forEach((n,i)=>{const v=d.criteria[i]||'';crit+='<div class="crit"><span>'+e(n)+'</span><span class="'+(v==='Đạt'?'ok':'no')+'">'+e(v)+'</span></div>'});
+  document.getElementById('content').innerHTML=
+   '<div class="box">'+
+     '<div class="row"><b>Mã hồ sơ</b>'+e(d.maHo)+'</div>'+
+     '<div class="row"><b>Họ tên</b>'+e(d.name)+'</div>'+
+     '<div class="row"><b>Xã/Phường</b>'+e(d.unit)+'</div>'+
+     '<div class="row"><b>Địa chỉ</b>'+e(d.address)+'</div>'+
+     '<div class="row"><b>Số điện thoại</b>'+e(d.phone)+'</div>'+
+     '<div class="row"><b>Kết quả tự đánh giá</b>'+e(d.selfAssessment)+' ('+e(d.total)+'/11)</div>'+
+   '</div>'+
+   '<div class="box">'+crit+'</div>'+
+   '<label>Trạng thái bình xét</label>'+
+   '<select id="status">'+
+     ['Chờ bình xét','Đã xác nhận đạt','Đã xác nhận chưa đạt','Cần bổ sung thông tin'].map(x=>'<option '+(x===d.status?'selected':'')+'>'+x+'</option>').join('')+
+   '</select>'+
+   '<label>Ý kiến Trưởng ấp/khu vực</label><textarea id="opinion">'+e(d.opinion)+'</textarea>'+
+   '<label>Người xác nhận</label><input id="reviewer" value="'+e(d.reviewer)+'">'+
+   '<label>Ghi chú quản trị</label><textarea id="adminNote">'+e(d.adminNote)+'</textarea>'+
+   '<button class="primary" onclick="save()">Lưu kết quả bình xét</button>';
+  document.getElementById('msg').textContent='';
+}
+function save(){
+  if(!current)return;
+  const data={
+    row:current.row,
+    status:document.getElementById('status').value,
+    opinion:document.getElementById('opinion').value,
+    reviewer:document.getElementById('reviewer').value,
+    adminNote:document.getElementById('adminNote').value
+  };
+  document.getElementById('msg').textContent='Đang lưu...';
+  google.script.run.withSuccessHandler(r=>{
+    document.getElementById('msg').textContent='Đã lưu kết quả bình xét.';
+    loadSelected();
+  }).withFailureHandler(err=>{
+    document.getElementById('msg').textContent=err.message||String(err);
+  }).saveReview(data);
+}
+</script>
+</body>
+</html>
